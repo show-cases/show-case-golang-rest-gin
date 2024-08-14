@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jiafangtao/showcases/dal"
@@ -12,8 +13,8 @@ import (
 func addBooksRoute(rg *gin.RouterGroup) {
 	// get all books
 	var books []model.Book
-	ping := rg.Group("/books")
-	ping.GET("/", func(c *gin.Context) {
+	route := rg.Group("/books")
+	route.GET("/", func(c *gin.Context) {
 
 		err := dal.Connect()
 		if err != nil {
@@ -31,5 +32,30 @@ func addBooksRoute(rg *gin.RouterGroup) {
 		c.JSON(http.StatusOK, gin.H{
 			"books": books,
 		})
+	})
+
+	route.GET("/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		bookId, err := strconv.Atoi(id)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		//TODO: is the connection pooled?
+		err = dal.Connect()
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		var book *model.Book
+		book, err = dal.QueryBookById(bookId)
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		c.JSON(http.StatusOK, book)
 	})
 }
